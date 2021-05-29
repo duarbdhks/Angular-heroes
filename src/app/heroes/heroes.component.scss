@@ -15,6 +15,12 @@
     height: 1.6em;
     border-radius: 4px;
 
+    a {
+      color: gray;
+      text-decoration: none;
+      display: block;
+    }
+
     &:hover {
       color: #607D8B;
       background-color: #DDD;
