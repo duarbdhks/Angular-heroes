@@ -1,5 +1,7 @@
+import { HttpClient } from '@angular/common/http'
 import { Injectable } from '@angular/core'
 import { Observable, of } from 'rxjs'
+import { catchError, tap } from 'rxjs/operators'
 import { Hero } from './heroes/hero'
 import { HEROES } from './heroes/mock-heroes'
 import { MessageService } from './messages/message.service'
@@ -8,17 +10,52 @@ import { MessageService } from './messages/message.service'
   providedIn: 'root'
 })
 export class HeroService {
-  constructor(private messageService: MessageService) {}
+  private heroesURL = `api/heroes`
+
+  constructor(
+    private http: HttpClient,
+    private messageService: MessageService
+  ) {}
+
+  /** HeroService에서 보내는 메시지는 MessageService가 화면에 표시합니다. */
+  private log(message: string) {
+    this.messageService.add(`HeroService: ${message}`)
+  }
+
+  /**
+   * HTTP 요청이 실패한 경우를 처리합니다.
+   * 애플리케이션 로직 흐름은 그대로 유지됩니다.
+   * @param operation - 실패한 동작의 이름
+   * @param result - 기본값으로 반환할 객체
+   * @private
+   */
+  private handleError<T>(operation = 'operation', result?: T) {
+    return (error: any): Observable<T> => {
+      //TODO: 리모트 서버로 에러 메시지 보냄.
+      console.log(error) // 현재는 콘솔에 로그 출력
+
+      //TODO: 사용자가 이해할 수 있는 형태로 변환
+      this.log(`${operation} 실패: ${error.message}`)
+
+      //애플리케이션 로직이 끊기지 않도록 기본값으로 받은 객체를 반환
+      return of(result as T)
+    }
+  }
 
   getHeroes(): Observable<Hero[]> {
-    //TODO: 이 메시지는 서버에서 히어로 정보를 가져온 _후에_ 보내야 합니다.
-    this.messageService.add('HeroService: fetched heroes')
-    return of(HEROES)
+    return this.http.get<Hero[]>(this.heroesURL)
+      .pipe(
+        tap(_ => this.log(`fetched heroes`)),
+        catchError(this.handleError<Hero[]>('getHeroes', []))
+      )
   }
 
   getHero(id: number): Observable<Hero> {
-    //TODO: 이 메시지는 서버에서 히어로 정보를 가져온 _후에_ 보내야 합니다.
-    this.messageService.add(`HeroService: fetched hero id=${id}`)
-    return of(HEROES.find(hero => hero.id === id))
+    const url = `${this.heroesURL}/${id}`
+    return this.http.get<Hero>(url)
+      .pipe(
+        tap(_ => this.log(`fetched hero id=${id}`)),
+        catchError(this.handleError<Hero>(`getHero id=${id}`))
+      )
   }
 }
