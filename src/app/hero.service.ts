@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http'
+import { HttpClient, HttpHeaders } from '@angular/common/http'
 import { Injectable } from '@angular/core'
 import { Observable, of } from 'rxjs'
 import { catchError, tap } from 'rxjs/operators'
@@ -11,11 +11,77 @@ import { MessageService } from './messages/message.service'
 })
 export class HeroService {
   private heroesURL = `api/heroes`
+  httpOptions = {
+    headers: new HttpHeaders({
+      'Content-Type': 'application/json'
+    })
+  }
 
   constructor(
     private http: HttpClient,
     private messageService: MessageService
   ) {}
+
+  getHeroes(): Observable<Hero[]> {
+    return this.http.get<Hero[]>(this.heroesURL)
+      .pipe(
+        tap(_ => this.log(`fetched heroes`)),
+        catchError(this.handleError<Hero[]>('getHeroes', []))
+      )
+  }
+
+  getHero(id: number): Observable<Hero> {
+    const url = `${this.heroesURL}/${id}`
+    return this.http.get<Hero>(url)
+      .pipe(
+        tap(_ => this.log(`fetched hero id=${id}`)),
+        catchError(this.handleError<Hero>(`getHero id=${id}`))
+      )
+  }
+
+  updateHero(hero: Hero): Observable<any> {
+    return this.http.put(this.heroesURL, hero, this.httpOptions)
+      .pipe(
+        tap(_ => this.log(`update hero id=${hero.id}`)),
+        catchError(this.handleError<any>('updateHero'))
+      )
+  }
+
+  addHero(hero: Hero): Observable<Hero> {
+    return this.http.post<Hero>(this.heroesURL, hero, this.httpOptions)
+      .pipe(
+        tap((newHero: Hero) => this.log(`added hero id=${newHero.id}`)),
+        catchError(this.handleError<Hero>('addHero'))
+      )
+  }
+
+  deleteHero(hero: Hero | number): Observable<Hero> {
+    const id = typeof hero === 'number' ? hero : hero.id;
+    const url = `${this.heroesURL}/${id}`
+
+    return this.http.delete<Hero>(url, this.httpOptions)
+      .pipe(
+        tap(_ => this.log(`deleted hero id=${id}`)),
+        catchError(this.handleError<Hero>('deleteHero'))
+      )
+  }
+
+  /* GET: 입력된 문구가 이름에 포함된 히어로 목록을 반환합니다. */
+  searchHeroes(term: string): Observable<Hero[]> {
+    if (!term.trim()) {
+      return of([])
+    }
+
+    return this.http.get<Hero[]>(`${this.heroesURL}?name=${term}`)
+      .pipe(
+        tap(x => x.length ?
+          this.log(`"${term}"과 매치하는 영웅을 찾았습니다.`) :
+          this.log(`"${term}"과 매치하는 영웅을 찾을 수 없습니다.`)
+        ),
+        catchError(this.handleError<Hero[]>(`searchHeroes`, []))
+      )
+  }
+
 
   /** HeroService에서 보내는 메시지는 MessageService가 화면에 표시합니다. */
   private log(message: string) {
@@ -40,22 +106,5 @@ export class HeroService {
       //애플리케이션 로직이 끊기지 않도록 기본값으로 받은 객체를 반환
       return of(result as T)
     }
-  }
-
-  getHeroes(): Observable<Hero[]> {
-    return this.http.get<Hero[]>(this.heroesURL)
-      .pipe(
-        tap(_ => this.log(`fetched heroes`)),
-        catchError(this.handleError<Hero[]>('getHeroes', []))
-      )
-  }
-
-  getHero(id: number): Observable<Hero> {
-    const url = `${this.heroesURL}/${id}`
-    return this.http.get<Hero>(url)
-      .pipe(
-        tap(_ => this.log(`fetched hero id=${id}`)),
-        catchError(this.handleError<Hero>(`getHero id=${id}`))
-      )
   }
 }
