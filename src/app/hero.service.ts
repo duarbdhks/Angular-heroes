@@ -66,6 +66,22 @@ export class HeroService {
       )
   }
 
+  /* GET: 입력된 문구가 이름에 포함된 히어로 목록을 반환합니다. */
+  searchHeroes(term: string): Observable<Hero[]> {
+    if (!term.trim()) {
+      return of([])
+    }
+
+    return this.http.get<Hero[]>(`${this.heroesURL}?name=${term}`)
+      .pipe(
+        tap(x => x.length ?
+          this.log(`"${term}"과 매치하는 영웅을 찾았습니다.`) :
+          this.log(`"${term}"과 매치하는 영웅을 찾을 수 없습니다.`)
+        ),
+        catchError(this.handleError<Hero[]>(`searchHeroes`, []))
+      )
+  }
+
 
   /** HeroService에서 보내는 메시지는 MessageService가 화면에 표시합니다. */
   private log(message: string) {
