@@ -14,7 +14,6 @@ declare const require: {
   };
 };
 
-//test duarbdhks
 // First, initialize the Angular testing environment.
 getTestBed().initTestEnvironment(
   BrowserDynamicTestingModule,
